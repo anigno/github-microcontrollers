@@ -1,46 +1,48 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-//Structure example to receive data
-//Must match the sender structure
-typedef struct test_struct {
-  int x;
-  int y;
-} test_struct;
+#define LED_BUILTIN 2
 
-//Create a struct_message called myData
-test_struct myData;
-
-//callback function that will be executed when data is received
-void OnDataRecv(const uint8_t * mac, const uint8_t *incomingData, int len) {
-  memcpy(&myData, incomingData, sizeof(myData));
-  Serial.print("Bytes received: ");
-  Serial.println(len);
-  Serial.print("x: ");
-  Serial.println(myData.x);
-  Serial.print("y: ");
-  Serial.println(myData.y);
-  Serial.println();
+void blink_n_times(int n) {
+  pinMode(2, OUTPUT);
+  for (int i = 0; i < n; i++) {
+    digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+    delay(100);                       // wait for a second
+    digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
+    delay(200);
+  }
 }
- 
+
+//**receive espnow message. "blink_n", blink n times*/
+void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
+  String receivedString = "";
+  for (int i = 0; i < data_len; i++) {
+    receivedString += (char)data[i];
+  }
+  if (receivedString.startsWith("blink_")) {
+    int numBlinks = receivedString.substring(6).toInt();
+    Serial.print("Received blink command. Number of blinks: ");
+    Serial.println(numBlinks);
+    blink_n_times(numBlinks);
+  }
+}
+
+/////////////////////////////////////////////////////////
 void setup() {
   //Initialize Serial Monitor
   Serial.begin(115200);
-  
   //Set device as a Wi-Fi Station
   WiFi.mode(WIFI_STA);
-
   //Init ESP-NOW
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
     return;
   }
-  
-  // Once ESPNow is successfully Init, we will register for recv CB to
-  // get recv packer info
-  esp_now_register_recv_cb(OnDataRecv);
+  esp_now_register_recv_cb(onDataRecv);
+  blink_n_times(3);
 }
- 
+/////////////////////////////////////////////////////////
 void loop() {
 
+ 
 }
