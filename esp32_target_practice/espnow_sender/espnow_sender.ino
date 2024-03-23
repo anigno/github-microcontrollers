@@ -66,7 +66,10 @@ void loop() {
   test.x = random(0,20);
   test.y = random(0,20);
  
-  esp_err_t result = esp_now_send(0, (uint8_t *) &test, sizeof(test_struct));
+  //send to single pear
+  esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &test, sizeof(test_struct));
+  // send to all pears
+  //esp_err_t result = esp_now_send(0, (uint8_t *) &test, sizeof(test_struct));
    
   if (result == ESP_OK) {
     Serial.println("Sent with success");
