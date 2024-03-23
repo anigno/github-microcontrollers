@@ -1,20 +1,22 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-#define LED_BUILTIN 2
+#define LED_PIN 2
+int cnt = 0;
 
 void blink_n_times(int n) {
   pinMode(2, OUTPUT);
   for (int i = 0; i < n; i++) {
-    digitalWrite(LED_BUILTIN, HIGH);  // turn the LED on (HIGH is the voltage level)
-    delay(100);                       // wait for a second
-    digitalWrite(LED_BUILTIN, LOW);   // turn the LED off by making the voltage LOW
+    digitalWrite(LED_PIN, HIGH);  // turn the LED on (HIGH is the voltage level)
+    delay(100);                   // wait for a second
+    digitalWrite(LED_PIN, LOW);   // turn the LED off by making the voltage LOW
     delay(200);
   }
 }
 
 //**receive espnow message. "blink_n", blink n times*/
 void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
+  Serial.print("Received message");
   String receivedString = "";
   for (int i = 0; i < data_len; i++) {
     receivedString += (char)data[i];
@@ -43,6 +45,7 @@ void setup() {
 }
 /////////////////////////////////////////////////////////
 void loop() {
-
- 
+  // cnt = (cnt + 1) % 20;
+  // digitalWrite(LED_PIN, cnt / 10);
+  // delay(100);
 }
