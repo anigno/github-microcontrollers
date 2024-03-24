@@ -5,8 +5,14 @@
 
 void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
   Serial.println("Message received");
+
+  String receivedString = "";
+  for (int i = 0; i < data_len; i++) {
+    receivedString += (char)data[i];
+  }
+  Serial.println(receivedString);
   digitalWrite(LED_PIN, HIGH);  // Turn on LED
-  delay(250);                  // Keep LED on for 1 second
+  delay(250);                   // Keep LED on for 1 second
   digitalWrite(LED_PIN, LOW);   // Turn off LED
 }
 

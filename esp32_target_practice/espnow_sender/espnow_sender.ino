@@ -1,21 +1,11 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-// REPLACE WITH YOUR ESP RECEIVER'S MAC ADDRESS
-uint8_t broadcastAddress1[] = {0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4};
-uint8_t broadcastAddress2[] = {0x08, 0xD1, 0xF9, 0x3B, 0x38, 0x25};
-uint8_t broadcastAddress3[] = {0x08, 0xD1, 0xF9, 0x3B, 0x38, 0x26};
-
-typedef struct test_struct {
-  int x;
-  int y;
-} test_struct;
-
-test_struct test;
-
+uint8_t receiverAddress_1[] = { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 };
+// uint8_t broadcastAddress2[] = {0x08, 0xD1, 0xF9, 0x3B, 0x38, 0x25};
 esp_now_peer_info_t peerInfo;
+int cnt = 0;
 
-// callback when data is sent
 void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   char macStr[18];
   Serial.print("Packet to: ");
@@ -26,56 +16,48 @@ void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
   Serial.print(" send status:\t");
   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
 }
- 
-void setup() {
-  Serial.begin(115200);
- 
+
+void initEspNow() {
   WiFi.mode(WIFI_STA);
- 
   if (esp_now_init() != ESP_OK) {
     Serial.println("Error initializing ESP-NOW");
     return;
   }
-  
-  esp_now_register_send_cb(OnDataSent);
-   
-  // register peer
-  peerInfo.channel = 0;  
+}
+
+void registerPear(uint8_t macAddress[]) {
+  peerInfo.channel = 0;
   peerInfo.encrypt = false;
-  // register first peer  
-  memcpy(peerInfo.peer_addr, broadcastAddress1, 6);
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer");
-    return;
-  }
-  // register second peer  
-  memcpy(peerInfo.peer_addr, broadcastAddress2, 6);
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer");
-    return;
-  }
-  /// register third peer
-  memcpy(peerInfo.peer_addr, broadcastAddress3, 6);
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
+  // register first peer
+  memcpy(peerInfo.peer_addr, macAddress, 6);
+  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
     Serial.println("Failed to add peer");
     return;
   }
 }
- 
-void loop() {
-  test.x = random(0,20);
-  test.y = random(0,20);
- 
-  //send to single pear
-  esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &test, sizeof(test_struct));
-  // send to all pears
-  //esp_err_t result = esp_now_send(0, (uint8_t *) &test, sizeof(test_struct));
-   
+
+void setup() {
+  Serial.begin(115200);
+  initEspNow();
+  esp_now_register_send_cb(OnDataSent);
+  registerPear(receiverAddress_1);
+}
+
+esp_err_t sendStringMessage(uint8_t macAddress[], String message) {
+  esp_err_t result = esp_now_send(macAddress, (uint8_t *)message.c_str(), message.length());
+  Serial.print("sent: ["+message+"] ");
   if (result == ESP_OK) {
-    Serial.println("Sent with success");
+    Serial.println("with success");
+  } else {
+    Serial.println("Error");
   }
-  else {
-    Serial.println("Error sending the data");
-  }
+  return result;
+}
+
+void loop() {
+
+  String message = "hello world";
+  sendStringMessage(receiverAddress_1, message);
+
   delay(4000);
 }
