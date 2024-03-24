@@ -3,8 +3,8 @@
 
 // REPLACE WITH YOUR ESP RECEIVER'S MAC ADDRESS
 uint8_t broadcastAddress1[] = {0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4};
-uint8_t broadcastAddress2[] = {0x08, 0xD1, 0xF9, 0x3B, 0x38, 0x25};
-uint8_t broadcastAddress3[] = {0x08, 0xD1, 0xF9, 0x3B, 0x38, 0x26};
+// uint8_t broadcastAddress2[] = {0x08, 0xD1, 0xF9, 0x3B, 0x38, 0x25};
+// uint8_t broadcastAddress3[] = {0x08, 0xD1, 0xF9, 0x3B, 0x38, 0x26};
 
 typedef struct test_struct {
   int x;
@@ -16,16 +16,16 @@ test_struct test;
 esp_now_peer_info_t peerInfo;
 
 // callback when data is sent
-void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  char macStr[18];
-  Serial.print("Packet to: ");
-  // Copies the sender mac address to a string
-  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
-           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-  Serial.print(macStr);
-  Serial.print(" send status:\t");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
-}
+// void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+//   char macStr[18];
+//   Serial.print("Packet to: ");
+//   // Copies the sender mac address to a string
+//   snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
+//            mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
+//   Serial.print(macStr);
+//   Serial.print(" send status:\t");
+//   Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
+// }
  
 void setup() {
   Serial.begin(115200);
@@ -37,7 +37,7 @@ void setup() {
     return;
   }
   
-  esp_now_register_send_cb(OnDataSent);
+  //esp_now_register_send_cb(OnDataSent);
    
   // register peer
   peerInfo.channel = 0;  
@@ -49,25 +49,25 @@ void setup() {
     return;
   }
   // register second peer  
-  memcpy(peerInfo.peer_addr, broadcastAddress2, 6);
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer");
-    return;
-  }
+  // memcpy(peerInfo.peer_addr, broadcastAddress2, 6);
+  // if (esp_now_add_peer(&peerInfo) != ESP_OK){
+  //   Serial.println("Failed to add peer");
+  //   return;
+  // }
   /// register third peer
-  memcpy(peerInfo.peer_addr, broadcastAddress3, 6);
-  if (esp_now_add_peer(&peerInfo) != ESP_OK){
-    Serial.println("Failed to add peer");
-    return;
-  }
+  // memcpy(peerInfo.peer_addr, broadcastAddress3, 6);
+  // if (esp_now_add_peer(&peerInfo) != ESP_OK){
+  //   Serial.println("Failed to add peer");
+  //   return;
+  // }
 }
  
 void loop() {
   test.x = random(0,20);
   test.y = random(0,20);
- 
+  String message="hello world";
   //send to single pear
-  esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *) &test, sizeof(test_struct));
+  esp_err_t result = esp_now_send(broadcastAddress1, (uint8_t *)message.c_str(), message.length());
   // send to all pears
   //esp_err_t result = esp_now_send(0, (uint8_t *) &test, sizeof(test_struct));
    
