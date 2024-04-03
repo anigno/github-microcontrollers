@@ -1,6 +1,33 @@
 #include <esp_now.h>
 #include <WiFi.h>
+#include <Keypad.h>
+/////////////////////////////// generic /////////////////////////////
+#define LED_PIN 2
+int blinks = 9;
 
+void blinkLed(int on_time) {
+  digitalWrite(LED_PIN, HIGH);
+  delay(on_time);
+  digitalWrite(LED_PIN, LOW);
+}
+
+//////////////////////keypad/////////////////////////////////////////
+const byte ROWS = 4;
+const byte COLS = 3;
+
+char keys[ROWS][COLS] = {
+  { '1', '2', '3' },
+  { '4', '5', '6' },
+  { '7', '8', '9' },
+  { '*', '0', '#' }
+};
+
+byte rowPins[ROWS] = { 27, 26, 25, 33 };  // Replace GPIO_X, GPIO_Y, GPIO_Z, GPIO_W with your chosen GPIO pins
+byte colPins[COLS] = { 14, 12, 13 };      // Replace GPIO_A, GPIO_B, GPIO_C with your chosen GPIO pins
+
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
+
+//////////////////////////espnow/////////////////////////////////////
 uint8_t receiverAddress_1[] = { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 };
 // uint8_t broadcastAddress2[] = {0x08, 0xD1, 0xF9, 0x3B, 0x38, 0x25};
 esp_now_peer_info_t peerInfo;
@@ -47,18 +74,21 @@ esp_err_t sendStringMessage(uint8_t macAddress[], String message) {
   return result;
 }
 
+/////////////////////////////// setup ///////////////////////////////////////////////////
 void setup() {
+  pinMode(LED_PIN, OUTPUT);
   Serial.begin(115200);
   initEspNow();
-  // esp_now_register_send_cb(OnDataSent);
+  esp_now_register_send_cb(OnDataSent);
   registerPear(receiverAddress_1);
 }
 
-
+////////////////////////// loop /////////////////////////////////////////////////////////
 void loop() {
-  int blinks=9;
-  String message = "blink_" + String(blinks);
-  sendStringMessage(receiverAddress_1, message);
-
-  delay(5000);
+  char key = keypad.getKey();
+  if (key != NO_KEY) {
+    Serial.println(key);
+    String message = "blink_" + String(blinks);
+    sendStringMessage(receiverAddress_1, message);
+  }
 }
