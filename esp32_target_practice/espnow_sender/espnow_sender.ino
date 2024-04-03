@@ -3,13 +3,7 @@
 #include <Keypad.h>
 /////////////////////////////// generic /////////////////////////////
 #define LED_PIN 2
-int blinks = 9;
-
-void blinkLed(int on_time) {
-  digitalWrite(LED_PIN, HIGH);
-  delay(on_time);
-  digitalWrite(LED_PIN, LOW);
-}
+int blinks_to_send = 9;
 
 //////////////////////keypad/////////////////////////////////////////
 const byte ROWS = 4;
@@ -28,7 +22,14 @@ byte colPins[COLS] = { 14, 12, 13 };      // Replace GPIO_A, GPIO_B, GPIO_C with
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 //////////////////////////espnow/////////////////////////////////////
-uint8_t receiverAddress_1[] = { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 };
+uint8_t receiverAddress[6][6] = {
+  { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 },
+  { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 },
+  { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 },
+  { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 },
+  { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 },
+  { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 }
+};
 // uint8_t broadcastAddress2[] = {0x08, 0xD1, 0xF9, 0x3B, 0x38, 0x25};
 esp_now_peer_info_t peerInfo;
 int cnt = 0;
@@ -80,15 +81,32 @@ void setup() {
   Serial.begin(115200);
   initEspNow();
   esp_now_register_send_cb(OnDataSent);
-  registerPear(receiverAddress_1);
+  registerPear(receiverAddress[0]);
+  registerPear(receiverAddress[1]);
+  registerPear(receiverAddress[2]);
+  registerPear(receiverAddress[3]);
+  registerPear(receiverAddress[4]);
+  registerPear(receiverAddress[5]);
 }
 
 ////////////////////////// loop /////////////////////////////////////////////////////////
 void loop() {
-  char key = keypad.getKey();
-  if (key != NO_KEY) {
-    Serial.println(key);
-    String message = "blink_" + String(blinks);
-    sendStringMessage(receiverAddress_1, message);
+  char keyChar = keypad.getKey();
+  if (keyChar != NO_KEY) {
+    Serial.println(keyChar);
+    int intDigit = keyChar - '0';
+    Serial.println(intDigit);
+    uint8_t *selectedReceiverAddress;
+    if (intDigit >= 1 && intDigit <= 6) {
+      int receiver_index = intDigit - 1;
+      selectedReceiverAddress = receiverAddress[receiver_index];
+    }
+    if (keyChar == '*') {
+      //seed by cnt
+      //randowm 1-6
+      // selectedReceiverAddress = receiverAddress[receiver_index];
+    }
+    String message = "blink_" + String(intDigit);
+    sendStringMessage(selectedReceiverAddress, message);
   }
 }
