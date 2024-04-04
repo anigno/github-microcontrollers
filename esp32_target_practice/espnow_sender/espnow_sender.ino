@@ -1,28 +1,15 @@
 #include <esp_now.h>
 #include <WiFi.h>
 #include <Keypad.h>
-/////////////////////////////// generic /////////////////////////////
+#include "espnow_helper.h"
+#include "keypad_def.h"
+
 #define LED_PIN 2
-int blinks_to_send = 9;
-
-//////////////////////keypad/////////////////////////////////////////
-const byte ROWS = 4;
-const byte COLS = 3;
-
-char keys[ROWS][COLS] = {
-  { '1', '2', '3' },
-  { '4', '5', '6' },
-  { '7', '8', '9' },
-  { '*', '0', '#' }
-};
-
-byte rowPins[ROWS] = { 27, 26, 25, 33 };  // Replace GPIO_X, GPIO_Y, GPIO_Z, GPIO_W with your chosen GPIO pins
-byte colPins[COLS] = { 14, 12, 13 };      // Replace GPIO_A, GPIO_B, GPIO_C with your chosen GPIO pins
-
-Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
-
-//////////////////////////espnow/////////////////////////////////////
-uint8_t receiverAddress[6][6] = {
+int blinks_to_send = 4;
+int randomSeedCounter = 0;
+int lastRandomNumber = -1;
+//receivers esp32 mac addresses
+uint8_t receiverAddress[][6] = {
   { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 },
   { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 },
   { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 },
@@ -30,49 +17,14 @@ uint8_t receiverAddress[6][6] = {
   { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 },
   { 0xE4, 0x65, 0xB8, 0x83, 0xEC, 0xF4 }
 };
-// uint8_t broadcastAddress2[] = {0x08, 0xD1, 0xF9, 0x3B, 0x38, 0x25};
-esp_now_peer_info_t peerInfo;
-int cnt = 0;
 
-void OnDataSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
-  char macStr[18];
-  Serial.print("Packet to: ");
-  // Copies the sender mac address to a string
-  snprintf(macStr, sizeof(macStr), "%02x:%02x:%02x:%02x:%02x:%02x",
-           mac_addr[0], mac_addr[1], mac_addr[2], mac_addr[3], mac_addr[4], mac_addr[5]);
-  Serial.print(macStr);
-  Serial.print(" send status:\t");
-  Serial.println(status == ESP_NOW_SEND_SUCCESS ? "Delivery Success" : "Delivery Fail");
-}
-
-void initEspNow() {
-  WiFi.mode(WIFI_STA);
-  if (esp_now_init() != ESP_OK) {
-    Serial.println("Error initializing ESP-NOW");
-    return;
-  }
-}
-
-void registerPear(uint8_t macAddress[]) {
-  peerInfo.channel = 0;
-  peerInfo.encrypt = false;
-  // register first peer
-  memcpy(peerInfo.peer_addr, macAddress, 6);
-  if (esp_now_add_peer(&peerInfo) != ESP_OK) {
-    Serial.println("Failed to add peer");
-    return;
-  }
-}
-
-esp_err_t sendStringMessage(uint8_t macAddress[], String message) {
-  esp_err_t result = esp_now_send(macAddress, (uint8_t *)message.c_str(), message.length());
-  Serial.print("sent: [" + message + "] ");
-  if (result == ESP_OK) {
-    Serial.println("with success");
-  } else {
-    Serial.println("with Error");
-  }
-  return result;
+int getNewRandomNumber() {
+  int newNumber = esp_random() % 6;
+  do {
+    newNumber = esp_random() % 6;
+  } while (newNumber == lastRandomNumber);
+  lastRandomNumber = newNumber;
+  return newNumber;
 }
 
 /////////////////////////////// setup ///////////////////////////////////////////////////
@@ -81,12 +33,11 @@ void setup() {
   Serial.begin(115200);
   initEspNow();
   esp_now_register_send_cb(OnDataSent);
-  registerPear(receiverAddress[0]);
-  registerPear(receiverAddress[1]);
-  registerPear(receiverAddress[2]);
-  registerPear(receiverAddress[3]);
-  registerPear(receiverAddress[4]);
-  registerPear(receiverAddress[5]);
+  for (int i = 0; i < 6; i++) {
+    registerPear(receiverAddress[i]);
+  }
+  unsigned int seed = millis();  // Example: Use millis() as the seed
+  esp_random();
 }
 
 ////////////////////////// loop /////////////////////////////////////////////////////////
@@ -95,18 +46,18 @@ void loop() {
   if (keyChar != NO_KEY) {
     Serial.println(keyChar);
     int intDigit = keyChar - '0';
-    Serial.println(intDigit);
     uint8_t *selectedReceiverAddress;
     if (intDigit >= 1 && intDigit <= 6) {
       int receiver_index = intDigit - 1;
+      Serial.println("send to receiver: " + String(receiver_index));
       selectedReceiverAddress = receiverAddress[receiver_index];
     }
     if (keyChar == '*') {
-      //seed by cnt
-      //randowm 1-6
-      // selectedReceiverAddress = receiverAddress[receiver_index];
+      int randomValue = getNewRandomNumber();
+      Serial.println("send to receiver: " + String(randomValue));
+      selectedReceiverAddress = receiverAddress[randomValue];
     }
-    String message = "blink_" + String(intDigit);
+    String message = "blink_" + String(blinks_to_send);
     sendStringMessage(selectedReceiverAddress, message);
   }
 }
