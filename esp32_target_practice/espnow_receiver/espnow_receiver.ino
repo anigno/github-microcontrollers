@@ -5,14 +5,13 @@
 int cnt = 0;
 
 void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
-
   String receivedString = "";
   for (int i = 0; i < data_len; i++) {
     receivedString += (char)data[i];
   }
   if (receivedString.startsWith("blink_")) {
-    int x = receivedString.substring(6).toInt(); // Start from index 6 to skip "blink_"
-    Serial.print("Received blink command. Value of x: ");
+    int x = receivedString.substring(6).toInt();  // Start from index 6 to skip "blink_"
+    Serial.print("Received blink command. number of blinks: ");
     Serial.println(x);
     blinkLED(x);
   } else {
@@ -23,15 +22,14 @@ void onDataRecv(const uint8_t *mac_addr, const uint8_t *data, int data_len) {
 void blinkLED(int numBlinks) {
   for (int i = 0; i < numBlinks; i++) {
     digitalWrite(LED_PIN, HIGH);
-    delay(100); // Adjust blink duration as needed
+    delay(100);
     digitalWrite(LED_PIN, LOW);
-    delay(200); // Adjust blink duration as needed
+    delay(200);
   }
 }
 
 void setup() {
   Serial.begin(115200);
-  pinMode(LED_PIN, OUTPUT);
   Serial.print("ESP Board MAC Address:  ");
   Serial.println(WiFi.macAddress());
   WiFi.mode(WIFI_STA);
@@ -41,9 +39,9 @@ void setup() {
     Serial.println("Error initializing ESP-NOW");
     return;
   }
-
   // Register callback function to handle received data
   esp_now_register_recv_cb(onDataRecv);
+  pinMode(LED_PIN, OUTPUT);  //had to be last setup command, no idea why
 }
 
 void loop() {
