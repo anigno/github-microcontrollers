@@ -9,6 +9,10 @@ const char* password = "136161271";
 
 WebServer server(80);
 
+IPAddress staticIP(192, 168, 1, 96);  // Set your desired static IP address
+IPAddress gateway(192, 168, 1, 1);    // Set your gateway IP address
+IPAddress subnet(255, 255, 255, 0);   // Set your subnet mask
+
 void setup() {
   Serial.begin(115200);
 
@@ -17,9 +21,10 @@ void setup() {
 
   // Define routes
   server.on("/", HTTP_GET, []() {
-    float batteryVoltage=analogRead(BATTERY_PIN);
+    float batteryVoltage = analogRead(BATTERY_PIN); //(0 - 4095) 
+    float batteryPercentage = (batteryVoltage / 4095.0 * 3.3) * (4.2 / 3.3)*100;
     // Serve the HTML page
-    server.send(200, "text/html", generateHTML(batteryVoltage));
+    server.send(200, "text/html", generateHTML(batteryPercentage));
   });
 
   server.on("/button1", HTTP_GET, []() {
@@ -62,6 +67,7 @@ void loop() {
 void connectToWiFi() {
   Serial.println("Connecting to WiFi...");
   WiFi.begin(ssid, password);
+  WiFi.config(staticIP, gateway, subnet);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting...");
@@ -86,10 +92,15 @@ void WiFiEvent(WiFiEvent_t event) {
   }
 }
 
-String generateHTML(float batteryVoltage) {
-  String html = "<!DOCTYPE html><html><head><title>ESP32 Web Server</title></head><body>";
+String generateHTML(float batteryPrecentage) {
+  String html = "<!DOCTYPE html><html><head><title>ESP32 Web Server</title>";
+  html += "<style>";
+  html += "body { font-size: 20px; }"; // Enlarge text size
+  html += "button { font-size: 20px; padding: 10px 20px; }"; // Enlarge button size and add padding
+  html += "</style>";
+  html += "</head><body>";
   html += "<h1>ESP32 Web Server</h1>";
-  html += "<p>Battery voltage: " + String(batteryVoltage/4.2*100) + "V</p>";
+  html += "<p>Battery voltage: " + String(batteryPrecentage) + "%</p>";
   html += "<input type=\"text\" id=\"textbox\"><br>";
   html += "<button onclick=\"button1()\">Button 1</button>";
   html += "<button onclick=\"button2()\">Button 2</button>";
@@ -111,3 +122,4 @@ String generateHTML(float batteryVoltage) {
   html += "</body></html>";
   return html;
 }
+
